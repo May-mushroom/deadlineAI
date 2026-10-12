@@ -123,6 +123,21 @@ body {
   color: var(--gray-700);
 }
 
+/* Loading / error banners */
+.banner {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.banner--error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* Task pool */
 .task-pool__title {
   font-size: 12px;
@@ -195,6 +210,53 @@ body {
 
 .task-item__add-btn:hover {
   color: var(--gray-700);
+}
+
+/* Week page: 7-day breakdown */
+.week-days {
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.day-section {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+}
+
+.day-section__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+}
+
+.day-section__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.day-section__list .task-item {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.day-section__list .task-item:last-child {
+  border-bottom: none;
+}
+
+.day-section__empty {
+  color: var(--gray-400);
+  font-size: 12px;
+  padding: 4px 0;
 }
 
 /* Buttons */

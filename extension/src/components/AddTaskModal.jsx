@@ -1,23 +1,23 @@
-import { useState } from 'react'
+import { useState } from "react";
 
 export default function AddTaskModal({ categories, onCancel, onSave }) {
-  const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [description, setDescription] = useState('')
-  const [importance, setImportance] = useState(3)
-  const [category, setCategory] = useState(categories[0]?.id ?? '')
+  const [title, setTitle] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [description, setDescription] = useState("");
+  const [importance, setImportance] = useState(5);
+  const [category, setCategory] = useState(categories[0]?.name ?? "");
 
   const handleSave = () => {
-    if (!title.trim()) return
+    if (!title.trim()) return;
     onSave({
       title: title.trim(),
-      deadline,
+      category,
+      // backend's TaskRequest field is named `deadlines` (not `deadline`)
+      deadlines: deadline,
       description,
       importance: Number(importance),
-      category,
-      day: null,
-    })
-  }
+    });
+  };
 
   return (
     <div className="modal-backdrop" onClick={onCancel}>
@@ -41,8 +41,14 @@ export default function AddTaskModal({ categories, onCancel, onSave }) {
         </label>
 
         <label className="field">
-          <span className="field__label">Deadline</span>
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          <span className="field__label">
+            Deadline (optional — defaults to end of this week)
+          </span>
+          <input
+            type="date"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+          />
         </label>
 
         <label className="field">
@@ -59,8 +65,8 @@ export default function AddTaskModal({ categories, onCancel, onSave }) {
           <span className="field__label">Importance ({importance})</span>
           <input
             type="range"
-            min="1"
-            max="5"
+            min="0"
+            max="10"
             value={importance}
             onChange={(e) => setImportance(e.target.value)}
           />
@@ -68,9 +74,12 @@ export default function AddTaskModal({ categories, onCancel, onSave }) {
 
         <label className="field">
           <span className="field__label">Category</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>
+              <option key={c.id} value={c.name}>
                 {c.name}
               </option>
             ))}
@@ -87,5 +96,5 @@ export default function AddTaskModal({ categories, onCancel, onSave }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
