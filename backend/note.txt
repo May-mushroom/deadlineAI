@@ -1,0 +1,8 @@
+- implement api_schema again: match with extension data input
+
+
+# ai/utils.py
+- refine the prompt to skip certain information in the sent description
+
+# scheduling logic
+- A task that doesn't fit any day before its deadline (not enough capacity anywhere) — what should happen to it?
