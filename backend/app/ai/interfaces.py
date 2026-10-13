@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from app.ai.processors.noop import NoOpProcessor
-
-
 
 class TaskProcessor(ABC):
     """One step in the AI pipeline (categorize, score priority, dedupe, ...)."""
@@ -15,7 +12,10 @@ class TaskProcessor(ABC):
 class AIPipeline:
     """Runs processors in order. Swap in real processors when the AI approach is decided."""
 
-    def __init__(self, processors: Optional[list[TaskProcessor]] = [NoOpProcessor()]):
+    def __init__(self, processors: Optional[list[TaskProcessor]] = None):
+        if processors is None:
+            from app.ai.processors.noop import NoOpProcessor  # local import: avoids a circular import with noop.py
+            processors = [NoOpProcessor()]
         self.processors = processors
 
     async def run(self, tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:

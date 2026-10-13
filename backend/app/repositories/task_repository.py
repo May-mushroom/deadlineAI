@@ -47,8 +47,10 @@ async def list_week(session: AsyncSession, user_id: str, week_start: date) -> li
 
 async def list_day(session: AsyncSession, user_id: str, day: date) -> list[Row]:
     week_start = day - timedelta(days=day.weekday())
+    # day_of_week actually stores the full scheduled date (see normalizer.place()),
+    # not a 0-6 weekday index, so it's compared to `day` directly.
     return [(t, d) for t, d in await list_week(session, user_id, week_start)
-            if d is not None and d.day_of_week == day.weekday()]
+            if d is not None and d.day_of_week == day]
 
 
 async def create_task(session: AsyncSession, task: Task, distribution: Optional[TaskDistribution]) -> Row:
@@ -126,4 +128,32 @@ async def upsert_google_task(session: AsyncSession, normalized) -> str:
     await session.commit()
     return "updated"
 
-async def create_task_assessment(): pass
+async def create_task_assessment(session: AsyncSession, assessment: dict) -> TaskAssessment:
+    """Insert or refresh the TaskAssessment for assessment['task_id'] (one row per task)."""
+    existing = (await session.execute(
+        select(TaskAssessment).where(TaskAssessment.task_id == assessment["task_id"])
+    )).scalars().first()
+    if existing is None:
+        existing = TaskAssessment(
+            assessment_id=assessment["assessment_id"],
+            task_id=assessment["task_id"],
+            priority_score=assessment["priority_score"],
+            estimated_effort=assessment["estimated_effort"],
+        )
+        session.add(existing)
+    else:
+        existing.priority_score = assessment["priority_score"]
+        existing.estimated_effort = assessment["estimated_effort"]
+    await session.commit()
+    return existing
+
+
+async def assign_to_day(session: AsyncSession, task_id: str, week_start: str, day: date) -> Optional[Row]:
+    """Apply one Distribute result: give the task a specific day and mark it assigned."""
+    task = (await session.execute(select(Task).where(Task.task_id == task_id))).scalars().first()
+    if task is None:
+        return None
+    dist = await _set_distribution(session, task_id, week_start, day)
+    task.status = STATUS_ASSIGNED
+    await session.commit()
+    return task, dist

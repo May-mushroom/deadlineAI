@@ -121,6 +121,8 @@ class GoogleAccount(Base):
   channel_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Calendar push channel
   channel_resource_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
   channel_expiry: Mapped[Optional[datetime]] = mapped_column(nullable=True)  # naive UTC
+  # True once a Calendar webhook fires; cleared after the next successful /task/distribute call.
+  schedule_stale: Mapped[bool] = mapped_column(default=False)
 
 ## HELPER FUNCTIONS
 def get_week_start(d: date) -> date:
