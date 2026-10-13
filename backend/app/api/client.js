@@ -1,5 +1,8 @@
 // Minimal API client for the Task Planner backend.
 // TODO: point this at your actual server (and env-ify it) before shipping.
+// NOTE: the task router (task.py) only declares prefix="/task" — the "/api"
+// segment below assumes your app mounts it as app.include_router(router,
+// prefix="/api"). Adjust if your actual mount point differs.
 const API_BASE_URL = "http://localhost:8000/api";
 
 // TODO: no auth flow exists yet. Once there's a login/token step, read the
@@ -14,6 +17,7 @@ async function getAuthHeaders() {
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    cache: "no-store", // avoid serving a stale cached GET after a write (e.g. right after Distribute)
     headers: { ...(await getAuthHeaders()), ...(options.headers || {}) },
   });
   if (!res.ok) {
@@ -40,7 +44,6 @@ export function getTodayTasks(todayIso) {
 // `form` is { title, category, deadlines, description, importance }
 
 export function createPoolTask(form, weekStartIso) {
-  console.log(form);
   return request("/task/add/pool", {
     method: "POST",
     body: JSON.stringify({ ...form, pool_week: weekStartIso }),
@@ -65,4 +68,16 @@ export function setTaskDone(taskId, done) {
 
 export function deleteTask(taskId) {
   return request(`/task/delete/${taskId}`, { method: "DELETE" });
+}
+
+// --- DISTRIBUTE / GOOGLE STATUS --------------------------------------------
+
+export function distributeWeek(weekStartIso) {
+  return request(`/task/distribute?week_start=${weekStartIso}`, {
+    method: "POST",
+  });
+}
+
+export function getGoogleStatus() {
+  return request("/integrations/google/status");
 }

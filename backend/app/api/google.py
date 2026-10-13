@@ -56,7 +56,8 @@ async def callback(state: str, background: BackgroundTasks, code: Optional[str] 
 
 @router.get("/status")
 async def status(session: AsyncSession = Depends(get_session), user: CurrentUser = Depends(get_current_user)):
-    return {"connected": await get_account(session, user.id) is not None}
+    account = await get_account(session, user.id)
+    return {"connected": account is not None, "stale": bool(account.schedule_stale) if account else False}
 
 
 @router.post("/sync")
@@ -96,5 +97,9 @@ async def webhook(request: Request, background: BackgroundTasks, session: AsyncS
         return {"ok": True}
     account = await get_account_by_channel(session, headers.get("x-goog-channel-id", ""))
     if account is not None:
+        # Flag the schedule as stale now (cheap, request-scoped session already open);
+        # the actual resync still happens in the background.
+        account.schedule_stale = True
+        await session.commit()
         background.add_task(sync_user_in_background, account.user_id)
     return {"ok": True}

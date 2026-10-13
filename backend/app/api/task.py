@@ -1,18 +1,25 @@
 import datetime as dt
+from types import SimpleNamespace
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.pipelines import AnalyzingTask, SchedulingPipeline
+from app.ai.processors import SchedulingProcessor
 from app.api.api_schema import TaskDoneRequest, TaskOut, TaskRequest
 from app.core.auth import CurrentUser, get_current_user
 from app.ingestion import service
+from app.ingestion.availability import get_available_hours
 from app.ingestion.normalizer import classify
 from app.repositories import task_repository as repo
+from app.repositories.google_account_repository import clear_schedule_stale
 from database.models.data_models import get_week_start
 from database.session import get_session
 
 router = APIRouter(prefix="/task", tags=["task"])
+analyzing_task = AnalyzingTask()
+scheduling_pipeline = SchedulingPipeline(SchedulingProcessor())
 
 
 async def _get_or_404(session: AsyncSession, user_id: str, task_id: str):
@@ -82,6 +89,39 @@ async def set_task_done(task_id: str, body: TaskDoneRequest, session: AsyncSessi
     # only takes a bool, so it needs to apply that rule itself, or this route
     # should pass the target status through once that signature changes.
     return TaskOut.from_models(*await repo.set_done(session, task, body.done))
+
+
+## DISTRIBUTE (schedule this week's currently-unscheduled pool tasks onto available days)
+## Only pool tasks move; tasks already assigned to a day are left untouched for now.
+@router.post("/distribute")
+async def distribute_week(week_start: dt.date, session: AsyncSession = Depends(get_session),
+                          user: CurrentUser = Depends(get_current_user)):
+    monday = get_week_start(week_start)
+    pool_tasks = [t for t, d in await repo.list_week(session, user.id, monday) if d is None]
+    if not pool_tasks:
+        return {"scheduled": [], "unscheduled": []}
+
+    assessments = []
+    for task in pool_tasks:
+        result = await analyzing_task.run(task)
+        await repo.create_task_assessment(session, result)
+        assessments.append(SimpleNamespace(
+            task_id=task.task_id, task=task,
+            estimated_effort=result["estimated_effort"], priority_score=result["priority_score"],
+        ))
+
+    available = await get_available_hours(session, user.id, monday)
+    plan = scheduling_pipeline.run(available, assessments)
+
+    scheduled_out = []
+    for day_entry in plan["schedule"]:
+        for task_id in day_entry["tasks"]:
+            row = await repo.assign_to_day(session, task_id, monday.isoformat(), day_entry["day"])
+            if row:
+                scheduled_out.append(TaskOut.from_models(*row))
+
+    await clear_schedule_stale(session, user.id)
+    return {"scheduled": scheduled_out, "unscheduled": plan["unscheduled"]}
 
 
 ## DELETE TASK

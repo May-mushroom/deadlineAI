@@ -17,7 +17,7 @@ class EffortProcessor(TaskProcessor):
 
     def process(self, task: object) -> float:
         PROMPT = f"""
-            Analyze this task: {task.title}
+            Analyze this task: {task.task_title}
             tasks description: {task.description}
     
             Return a JSON object containing:
@@ -38,3 +38,12 @@ class EffortProcessor(TaskProcessor):
         estimated_effort = result["estimated_hours"]
 
         return estimated_effort
+
+
+if __name__ == "__main__":
+    class TestTask:
+        task_title = "Build login page"
+        description = "Create a login page with validation."
+
+    processor = EffortProcessor()
+    print(processor.process(TestTask()))

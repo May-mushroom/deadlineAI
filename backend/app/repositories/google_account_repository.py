@@ -16,6 +16,13 @@ async def get_account_by_channel(session: AsyncSession, channel_id: str) -> Opti
     )).scalars().first()
 
 
+async def clear_schedule_stale(session: AsyncSession, user_id: str) -> None:
+    account = await session.get(GoogleAccount, user_id)
+    if account is not None:
+        account.schedule_stale = False
+        await session.commit()
+
+
 async def save_tokens(session: AsyncSession, user_id: str, credentials) -> GoogleAccount:
     """Insert or update the OAuth tokens. A refresh token is only sent on first consent, so keep the old one."""
     account = await session.get(GoogleAccount, user_id)
