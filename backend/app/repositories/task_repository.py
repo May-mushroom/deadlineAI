@@ -30,7 +30,6 @@ async def get_task(session: AsyncSession, user_id: str, task_id: str) -> Optiona
     row = (await session.execute(stmt)).first()
     return (row[0], row[1]) if row else None
  
-
 async def list_week(session: AsyncSession, user_id: str, week_start: date) -> list[Row]:
     """Tasks scheduled in the week, plus the week's pool (no distribution, deadline inside the week)."""
     stmt = (select(Task, TaskDistribution)

@@ -18,7 +18,7 @@ async def add_manual_task(session: AsyncSession, user_id: str, req: TaskRequest)
 async def edit_task(session: AsyncSession, task: Task, req: TaskRequest):
     fields: dict[str, Any] = {
         "task_title": req.title, "category": req.category, "importance": req.importance,
-        "description": req.description, "note": req.note,
+        "description": req.description,
     }
     # Move the task only when the request names a day or a week; otherwise keep where it is.
     placement = None

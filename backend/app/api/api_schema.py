@@ -63,7 +63,9 @@ class TaskResponse(BaseModel):
     def from_models(cls, task: Task, dist: Optional[TaskDistribution] = None) -> "TaskResponse":
         scheduled = None
         if dist is not None:
-            scheduled = dt.date.fromisoformat(dist.week_start) + dt.timedelta(days=dist.day_of_week)
+            # scheduled = dt.date.fromisoformat(dist.week_start) + dt.timedelta(days=dist.day_of_week)
+            scheduled = dt.date.fromisoformat(dist.day_of_week) 
+
         return cls(
             task_id=task.task_id,
             task_number=task.task_number,
@@ -79,5 +81,52 @@ class TaskResponse(BaseModel):
             week_start=dist.week_start if dist else None,
             day_of_week=dist.day_of_week if dist else None,
             scheduled_date=scheduled,
+            pool_week_start=None if dist else get_week_start(task.deadline),
+        )
+
+
+class TaskOut(BaseModel):
+    """Response shape used by the extension UI.
+
+    Same as TaskResponse but without task_number / src / note, which the
+    Task model doesn't actually define yet (they're still commented out as
+    "FUTURE PLAN" in data_models.py). TaskResponse is left as-is above in
+    case something else still relies on it; new code should use TaskOut.
+    """
+
+    task_id: str
+    title: str
+    category: str
+    deadline: dt.date
+    importance: int
+    status: int  # 0 unassigned, 1 assigned, 2 pending, 3 done
+    created_at: dt.date
+    description: str
+    # From TASK_DISTRIBUTION (None for week pool tasks)
+    week_start: Optional[str] = None
+    # day_of_week: Optional[dt.date] = None
+    scheduled_date: Optional[dt.date] = None
+    # Monday of the pool week (None once the task has a specific day)
+    pool_week_start: Optional[dt.date] = None
+
+    @classmethod
+    def from_models(cls, task: Task, dist: Optional[TaskDistribution] = None) -> "TaskOut":
+        scheduled = None
+        # scheduled = dt.date.fromisoformat(dist.week_start) + dt.timedelta(days=dist.day_of_week)
+
+        # scheduled = dt.date.fromisoformat(dist.day_of_week) 
+        # scheduled = dist.day_of_week
+        return cls(
+            task_id=task.task_id,
+            title=task.task_title,
+            category=task.category,
+            deadline=task.deadline, 
+            importance=task.importance,
+            status=task.status,
+            created_at=task.created_at,
+            description=task.description,
+            week_start=dist.week_start if dist else None,
+            # day_of_week=dist.day_of_week if dist else None,
+            scheduled_date=dist.day_of_week if dist else None,
             pool_week_start=None if dist else get_week_start(task.deadline),
         )
