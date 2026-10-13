@@ -12,7 +12,7 @@ class Task(Base):
   user_id: Mapped[str] = mapped_column()
   task_id: Mapped[str] = mapped_column(
     primary_key=True,
-    nullable=False  
+    nullable=False   
   )
 
   task_title: Mapped[str] = mapped_column(String(100), nullable=False)

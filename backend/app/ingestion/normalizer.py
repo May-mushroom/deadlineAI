@@ -48,12 +48,12 @@ def place(scheduled_date: Optional[date], pool_week: Optional[date], done: bool 
     return Placement(week + timedelta(days=6), STATUS_DONE if done else STATUS_UNASSIGNED, None, None)
 
 
-def _build(user_id: str, task_id: str, src: str, title: str, category: str, importance: int,
-           description: str, note: str, placement: Placement, today: date) -> NormalizedTask:
+def _build(user_id: str, task_id: str, title: str, category: str, importance: int,
+           description: str, placement: Placement, today: date) -> NormalizedTask:
     task = Task(
-        user_id=user_id, task_id=task_id, task_title=title, src=src, category=category,
+        user_id=user_id, task_id=task_id, task_title=title, category=category,
         deadline=placement.deadline, importance=importance, status=placement.status,
-        created_at=today, description=description, note=note,
+        created_at=today, description=description,
     )
     dist = None
     if placement.week_start is not None:
@@ -67,8 +67,8 @@ def _build(user_id: str, task_id: str, src: str, title: str, category: str, impo
 def normalize_manual(req: TaskRequest, user_id: str, today: Optional[date] = None) -> NormalizedTask:
     today = today or date.today()
     placement = place(req.scheduled_date, req.pool_week, False, today)
-    return _build(user_id, uuid.uuid4().hex, SRC_MANUAL, req.title, req.category, req.importance,
-                  req.description, req.note, placement, today)
+    return _build(user_id, uuid.uuid4().hex, req.title, req.category, req.importance,
+                  req.description, placement, today)
 
 
 def normalize_google_task(raw: dict[str, Any], user_id: str, today: Optional[date] = None) -> NormalizedTask:
